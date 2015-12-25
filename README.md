@@ -6,4 +6,4 @@ After I finish the fist version of this program, I solved almost every sudoku pr
 Latter, I find some one solve it with python, and SAT. see  https://github.com/ContinuumIO/pycosat.git
 But still, it is fun to work on this problem. If you are interested, or have some advise, contact me.
 
-v2 solve most problems, v3 is a try to solve every possible sudoku problem, not sucfess.
+v2 can solve most sudoku problems, v3 try to solve everything, but not yet.
