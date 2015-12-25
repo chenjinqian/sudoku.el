@@ -5,3 +5,5 @@ This is a game I played in high school, at first it's a lot of fun, but as I pre
 After I finish the fist version of this program, I solved almost every sudoku problems I have ever meet with it. Untill one day, some one give me an extramly difficult one, I run the program, it get stucked. Then I know the skills I have find is not enough. It seems I have to assume some case, and prove that it will lead to errors latter, and go back exclude that case. This process can be nested, making it more complicated. I tried in this version 2, but not success.
 Latter, I find some one solve it with python, and SAT. see  https://github.com/ContinuumIO/pycosat.git
 But still, it is fun to work on this problem. If you are interested, or have some advise, contact me.
+
+v2 solve most problems, v3 is a try to solve every possible sudoku problem, not sucfess.
