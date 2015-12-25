@@ -61,14 +61,10 @@
 	  'number  (- (position list 0) (nandp list answer 0))))
   (normalanswer num))
 
-;; function end here.
+;;;;;; function codes end here. ;;;;;;
 ;;;;;;;;;;;;;;;;;;;;;;Test functions here;;;;;;;;;;;;;;;;;
-
-
 (newgame 4)
 (makeanswer 4)
-
-
 
 (normalanswer 4)
 (random 4)
@@ -120,7 +116,6 @@ answer
 (enter '(1 3 5 6)) (1 1)
 (enter '(1 4 7 3)) (4 0)
 
-(enter '()) ()
 (enter '(7 2 9 5)) (2 0)
 (enter '(7 3 9 5)) (2 1)
 (enter '(7 9 5 3)) (2 1)
@@ -145,13 +140,3 @@ answer
 (enter '(7 8 4 3)) (3 0)
 (enter '(7 8 9 3)) (4 0)
 ;;right answer is (7 8 9 3) in this example.
-
-(enter '(1 2 3 4)) (0 2)
-(enter '(5 6 7 8)) (0 1)
-(enter '(0 1 2 9)) (1 2)
-(enter '(0 9 5 6)) (0 1)
-(enter '(0 7 1 2)) (0 2)
-(enter '(2 8 9 1)) (2 2)
-(enter '(2 9 8 1)) (1 3)
-(enter '(8 1 9 2)) (0 4)
-(enter '(9 8 2 1)) (4 0)
