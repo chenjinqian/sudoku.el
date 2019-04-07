@@ -41,15 +41,15 @@ solve_2 = """
 """
 # solved within four tic_tok process.
 
-test_3 = [[0,0,0,0,0,0,0,0,0],
-          [0,0,0,0,0,0,0,0,0],
-          [0,0,0,0,0,0,0,0,0],
-          [0,0,0,0,0,0,0,0,0],
-          [0,0,0,0,0,0,0,0,0],
-          [0,0,0,0,0,0,0,0,0],
-          [0,0,0,0,0,0,0,0,0],
-          [0,0,0,0,0,0,0,0,0],
-          [0,0,0,0,0,0,0,0,0]]
+test_3 = [[0,9,0,0,0,0,1,5,0],
+          [0,0,0,3,7,0,0,0,0],
+          [0,0,0,0,0,5,2,8,0],
+          [0,0,4,1,0,0,0,0,6],
+          [7,0,0,0,4,0,0,0,8],
+          [8,0,0,0,0,2,4,0,0],
+          [0,5,3,8,0,0,0,0,0],
+          [0,0,0,0,1,4,0,0,0],
+          [0,1,2,0,0,0,0,7,0]]
 
 def groupn(lst, n):
     return itertools.zip_longest(
@@ -58,27 +58,34 @@ def groupn(lst, n):
 
 class sudoku(object):
     def __init__(self):
-        "solve sudoku problem"
-        self.rlt_lst = []
+        """
+        solve sudoku problem
+        example:
+        s = sudoku()
+        load = s.load(test_2)
+        s.rlt = s.tic_tok()
+        print(s.show())
+        """
+        self.rlt = []
         self.task_lst = []
         self.unit_lst = self.init_unit()
 
     def load(self, simple_lst):
         assert(len(simple_lst) == 9)
         assert(sum([len(i) for i in simple_lst]) == 81)
-        rlt_lst = []
+        rlt = []
         for i in simple_lst:
             for j in i:
                 if j:
-                    rlt_lst.append(set([j]))
+                    rlt.append(set([j]))
                 else:
-                    rlt_lst.append(set([i+1 for i in range(9)]))
-        self.rlt_lst = rlt_lst
-        return rlt_lst
+                    rlt.append(set([i+1 for i in range(9)]))
+        self.rlt = rlt
+        return rlt
 
-    def show(self, rlt_lst=None):
-        if rlt_lst is None:
-            rlt_lst = self.rlt_lst
+    def show(self, rlt=None):
+        if rlt is None:
+            rlt = self.rlt
         r_div = "\n-----+-----+-----\n"
         c_div = '|'
         s = r_div.join(["\n".join(
@@ -89,17 +96,16 @@ class sudoku(object):
                          for c3 in groupn(i, 3)])
              for i in r3])
                         for r3 in groupn(
-                                list(groupn(rlt_lst, 9)), 3)])
-        # print(s)
+                                list(groupn(rlt, 9)), 3)])
         return s
 
-    def cel_one(self, lst=None):
+    def is_solved(self, lst=None):
         if lst is None:
-            lst = self.rlt_lst
-        return [bool(len(i)==1) for j in self.rlt_lst for i in j]
+            lst = self.rlt
+        return [bool(len(i)==1) for i in self.rlt]
 
-    def cel_not_one(self, lst):
-        return [not(i) for i in self.cel_one()]
+    def is_unsolved(self, lst):
+        return [not(i) for i in self.is_solved()]
 
     def init_unit(self):
         st_lst = [set() for i in range(9 + 9 + 9)]
@@ -113,66 +119,60 @@ class sudoku(object):
             st_lst[x+18].add(i)
         return st_lst
 
-    def get_unit(self, sn, unit_lst=None):
-        assert(type(sn) == int and (0 <= sn <= 80))
-        if unit_lst is None:
-            unit_lst = self.unit_lst
-        return [i for i in unit_lst if sn in i]
-
-    def tok_acc(self, v_set, unit_set, rlt_lst):
+    def tok_acc(self, v_set, unit_set, rlt):
         sn_set = set([i for i in range(9*9)
-                      if  ((len(v_set - rlt_lst[i])==0)
-                           and (len(rlt_lst[i] - v_set)==0))])
+                      if  ((len(v_set - rlt[i])==0)
+                           and (len(rlt[i] - v_set)==0))])
         if not len(unit_set - sn_set) == len(unit_set) - len(v_set):
-            return rlt_lst
+            return rlt
         if len(unit_set - sn_set) < len(unit_set):
-            rlt_lst = [(rlt_lst[i] - v_set)
+            rlt = [(rlt[i] - v_set)
                        if (not i in sn_set
                            and (i in unit_set))
-                       else rlt_lst[i]
+                       else rlt[i]
                        for i in range(9*9)]
-        return rlt_lst
+        return rlt
 
-    def tok(self, rlt_lst=None):
+    def tok(self, rlt=None):
         """
         exclude cells Outside targets possible value set.
         """
-        if rlt_lst is None:
-            rlt_lst = self.rlt_lst
-        if rlt_lst is None:
-            rlt_lst = self.rlt_lst
+        if rlt is None:
+            rlt = self.rlt
+        if rlt is None:
+            rlt = self.rlt
         set_lst = [set([i+1, j+1, k+1]) for i in range(9) for j in range(9) for k in range(9)
                    if (i<=j<=k)]
         for v_set in set_lst:
             for unit in self.unit_lst:
-                rlt_lst = self.tok_acc(v_set, unit, rlt_lst)
-        return rlt_lst
+                rlt = self.tok_acc(v_set, unit, rlt)
+        return rlt
 
-    def tic_acc(self, v_set, unit, rlt_lst):
-        v_in_unit = [i for i in unit if (len(v_set - rlt_lst[i])<len(v_set))]
+    def tic_acc(self, v_set, unit, rlt):
+        v_in_unit = [i for i in unit if (len(v_set - rlt[i])<len(v_set))]
         if not len(v_in_unit) == len(v_set):
-            return rlt_lst
+            return rlt
         # print(v_in_unit)
         sn_set = set(v_in_unit)
         return [(v_set & i[0]) if (i[1] in sn_set) else i[0]
-                for i in zip(rlt_lst, range(len(rlt_lst)))]
+                for i in zip(rlt, range(len(rlt)))]
 
-    def tic(self, rlt_lst=None):
+    def tic(self, rlt=None):
         """
         exclude target Inside possible value set.
         """
-        if rlt_lst is None:
-            rlt_lst = self.rlt_lst
+        if rlt is None:
+            rlt = self.rlt
         set_lst = [set([i+1, j+1, k+1]) for i in range(9) for j in range(9) for k in range(9)
                    if (i<=j<=k)]
         for v_set in set_lst:
             for unit in self.unit_lst:
-                rlt_lst = self.tic_acc(v_set, unit, rlt_lst)
-        return rlt_lst
+                rlt = self.tic_acc(v_set, unit, rlt)
+        return rlt
 
-    def tic_tok(self, rlt_lst=None, n=3):
-        if rlt_lst is None:
-            rlt_lst = self.rlt_lst
+    def tic_tok(self, rlt=None, n=3):
+        if rlt is None:
+            rlt = self.rlt
         assert(n>=1)
         set_lst = [set([i+1]) for i in range(9)]
         n -= 1
@@ -182,20 +182,30 @@ class sudoku(object):
                        for st_one in set_lst
                        if (i+1>=max(st_one))]
             n -= 1
-        # set_lst = [set([i+1, j+1, k+1]) for i in range(9)
-        #            for j in range(9) for k in range(9)
-        #            if (i<=j<=k)]
         for v_set in set_lst:
             for unit_tic in self.unit_lst:
-                rlt_lst = self.tic_acc(v_set, unit_tic, rlt_lst)
+                rlt = self.tic_acc(v_set, unit_tic, rlt)
             for unit_tok in self.unit_lst:
-                rlt_lst = self.tok_acc(v_set, unit_tok, rlt_lst)
-                # for unit_tok in self.unit_lst:
-                #     if (len(unit_tic | unit_tok) < len(v_set)
-                #         or len(unit_tic | unit_tok)==9):
-                #         continue
-                #     rlt_lst = self.tok_acc(v_set, unit_tok, rlt_lst)
-        return rlt_lst
+                rlt = self.tok_acc(v_set, unit_tok, rlt)
+        return rlt
+
+    def process(self, rlt=None):
+        if rlt is None:
+            rlt = self.rlt
+        for n_1 in range(3):
+            n = n_1 + 1
+            useless_cnt = 0
+            old_sum = sum([i for i in self.is_solved(rlt)])
+            while useless_cnt < 3:
+                rlt_new = self.tic_tok(rlt=rlt, n=n)
+                new_sum = sum([i for i in self.is_solved(rlt_new)])
+                if new_sum == old_sum:
+                    useless_cnt += 1
+                rlt = rlt_new
+                old_sum = new_sum
+                if new_sum == 81:
+                    return rlt
+        return rlt
 
 
 def main():
