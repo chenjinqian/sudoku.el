@@ -39,6 +39,17 @@ solve_2 = """
 9 7 8|2 1 4|3 6 5
 6 1 2|5 3 9|8 7 4
 """
+# solved within four tic_tok process.
+
+test_3 = [[0,0,0,0,0,0,0,0,0],
+          [0,0,0,0,0,0,0,0,0],
+          [0,0,0,0,0,0,0,0,0],
+          [0,0,0,0,0,0,0,0,0],
+          [0,0,0,0,0,0,0,0,0],
+          [0,0,0,0,0,0,0,0,0],
+          [0,0,0,0,0,0,0,0,0],
+          [0,0,0,0,0,0,0,0,0],
+          [0,0,0,0,0,0,0,0,0]]
 
 def groupn(lst, n):
     return itertools.zip_longest(
@@ -108,35 +119,36 @@ class sudoku(object):
             unit_lst = self.unit_lst
         return [i for i in unit_lst if sn in i]
 
-    def trim_sn_acc(self, sn, rlt_lst):
-        if not len(rlt_lst[sn]) == 1:
+    def tok_acc(self, v_set, unit_set, rlt_lst):
+        sn_set = set([i for i in range(9*9)
+                      if  ((len(v_set - rlt_lst[i])==0)
+                           and (len(rlt_lst[i] - v_set)==0))])
+        if not len(unit_set - sn_set) == len(unit_set) - len(v_set):
             return rlt_lst
-        set_one = rlt_lst[sn]
-        sn_unit = self.get_unit(sn)
-        new_lst = [rlt_lst[i] - set_one if (
-            not i == sn
-            and (i in sn_unit[0]
-               or i in sn_unit[1]
-               or i in sn_unit[2])) else rlt_lst[i]
-                   for i in range(9 * 9)]
-        return new_lst
-
-    def trim(self, rlt_lst=None):
-        """
-        exclude cells besides targets possible value set.
-        """
-        if rlt_lst is None:
-            rlt_lst = self.rlt_lst
-        for i in range(9 * 9):
-            rlt_lst = self.trim_sn_acc(i, rlt_lst)
+        if len(unit_set - sn_set) < len(unit_set):
+            rlt_lst = [(rlt_lst[i] - v_set)
+                       if (not i in sn_set
+                           and (i in unit_set))
+                       else rlt_lst[i]
+                       for i in range(9*9)]
         return rlt_lst
 
-    def tik(self, rlt_lst=None):
+    def tok(self, rlt_lst=None):
+        """
+        exclude cells Outside targets possible value set.
+        """
         if rlt_lst is None:
             rlt_lst = self.rlt_lst
-        pass
+        if rlt_lst is None:
+            rlt_lst = self.rlt_lst
+        set_lst = [set([i+1, j+1, k+1]) for i in range(9) for j in range(9) for k in range(9)
+                   if (i<=j<=k)]
+        for v_set in set_lst:
+            for unit in self.unit_lst:
+                rlt_lst = self.tok_acc(v_set, unit, rlt_lst)
+        return rlt_lst
 
-    def add_acc(self, v_set, unit, rlt_lst):
+    def tic_acc(self, v_set, unit, rlt_lst):
         v_in_unit = [i for i in unit if (len(v_set - rlt_lst[i])<len(v_set))]
         if not len(v_in_unit) == len(v_set):
             return rlt_lst
@@ -145,9 +157,9 @@ class sudoku(object):
         return [(v_set & i[0]) if (i[1] in sn_set) else i[0]
                 for i in zip(rlt_lst, range(len(rlt_lst)))]
 
-    def add(self, rlt_lst=None):
+    def tic(self, rlt_lst=None):
         """
-        exclude target itself's possible value set.
+        exclude target Inside possible value set.
         """
         if rlt_lst is None:
             rlt_lst = self.rlt_lst
@@ -155,7 +167,34 @@ class sudoku(object):
                    if (i<=j<=k)]
         for v_set in set_lst:
             for unit in self.unit_lst:
-                rlt_lst = self.add_acc(v_set, unit, rlt_lst)
+                rlt_lst = self.tic_acc(v_set, unit, rlt_lst)
+        return rlt_lst
+
+    def tic_tok(self, rlt_lst=None, n=3):
+        if rlt_lst is None:
+            rlt_lst = self.rlt_lst
+        assert(n>=1)
+        set_lst = [set([i+1]) for i in range(9)]
+        n -= 1
+        while n > 0:
+            set_lst = [(st_one | set([i+1]))
+                       for i in range(9)
+                       for st_one in set_lst
+                       if (i+1>=max(st_one))]
+            n -= 1
+        # set_lst = [set([i+1, j+1, k+1]) for i in range(9)
+        #            for j in range(9) for k in range(9)
+        #            if (i<=j<=k)]
+        for v_set in set_lst:
+            for unit_tic in self.unit_lst:
+                rlt_lst = self.tic_acc(v_set, unit_tic, rlt_lst)
+            for unit_tok in self.unit_lst:
+                rlt_lst = self.tok_acc(v_set, unit_tok, rlt_lst)
+                # for unit_tok in self.unit_lst:
+                #     if (len(unit_tic | unit_tok) < len(v_set)
+                #         or len(unit_tic | unit_tok)==9):
+                #         continue
+                #     rlt_lst = self.tok_acc(v_set, unit_tok, rlt_lst)
         return rlt_lst
 
 
