@@ -15,7 +15,6 @@ test_1 = [[8,0,0,0,0,0,0,0,0],
           [0,0,2,0,7,0,0,0,4],
           [0,0,0,0,0,3,6,1,0],
           [0,0,0,0,0,0,8,0,0]]
-
 test_2 = [[0,9,0,0,0,0,1,5,0],
           [0,0,0,3,7,0,0,0,0],
           [0,0,0,0,0,5,2,8,0],
@@ -25,7 +24,6 @@ test_2 = [[0,9,0,0,0,0,1,5,0],
           [0,5,3,8,0,0,0,0,0],
           [0,0,0,0,1,4,0,0,0],
           [0,1,2,0,0,0,0,7,0]]
-
 solve_2 = """
 3 9 6|4 2 8|1 5 7
 2 8 5|3 7 1|6 4 9
@@ -40,7 +38,6 @@ solve_2 = """
 6 1 2|5 3 9|8 7 4
 """
 # solved within four tic_tok process.
-
 test_3 = [[0,9,0,0,0,0,1,5,0],
           [0,0,0,3,7,0,0,0,0],
           [0,0,0,0,0,5,2,8,0],
@@ -50,6 +47,7 @@ test_3 = [[0,9,0,0,0,0,1,5,0],
           [0,5,3,8,0,0,0,0,0],
           [0,0,0,0,1,4,0,0,0],
           [0,1,2,0,0,0,0,7,0]]
+
 
 def groupn(lst, n):
     return itertools.zip_longest(
@@ -70,7 +68,7 @@ class sudoku(object):
         self.task_lst = []
         self.unit_lst = self.init_unit()
 
-    def load(self, simple_lst):
+    def load(self, simple_lst, setv=True):
         assert(len(simple_lst) == 9)
         assert(sum([len(i) for i in simple_lst]) == 81)
         rlt = []
@@ -102,10 +100,17 @@ class sudoku(object):
     def is_solved(self, lst=None):
         if lst is None:
             lst = self.rlt
-        return [bool(len(i)==1) for i in self.rlt]
+        return [bool(len(i)==1) for i in lst]
 
-    def is_unsolved(self, lst):
-        return [not(i) for i in self.is_solved()]
+    def is_unsolved(self, lst=None):
+        if lst is None:
+            lst = self.rlt
+        return [bool(len(i)>1) for i in lst]
+
+    def is_died(self, lst=None):
+        if lst is None:
+            lst = self.rlt
+        return [bool(len(i)<1) for i in lst]
 
     def init_unit(self):
         st_lst = [set() for i in range(9 + 9 + 9)]
@@ -123,8 +128,11 @@ class sudoku(object):
         sn_set = set([i for i in range(9*9)
                       if  ((len(v_set - rlt[i])==0)
                            and (len(rlt[i] - v_set)==0))])
-        if not len(unit_set - sn_set) == len(unit_set) - len(v_set):
-            return rlt
+        if not (len(unit_set - sn_set) == len(unit_set) - len(v_set)):
+            if (len(sn_set & unit_set) > len(v_set)):
+                return [(rlt[i] - v_set) for i in range(9*9)]
+            else:
+                return rlt
         if len(unit_set - sn_set) < len(unit_set):
             rlt = [(rlt[i] - v_set)
                        if (not i in sn_set
@@ -141,7 +149,8 @@ class sudoku(object):
             rlt = self.rlt
         if rlt is None:
             rlt = self.rlt
-        set_lst = [set([i+1, j+1, k+1]) for i in range(9) for j in range(9) for k in range(9)
+        set_lst = [set([i+1, j+1, k+1]) for i in range(9)
+                   for j in range(9) for k in range(9)
                    if (i<=j<=k)]
         for v_set in set_lst:
             for unit in self.unit_lst:
@@ -149,11 +158,10 @@ class sudoku(object):
         return rlt
 
     def tic_acc(self, v_set, unit, rlt):
-        v_in_unit = [i for i in unit if (len(v_set - rlt[i])<len(v_set))]
-        if not len(v_in_unit) == len(v_set):
+        sn_set = set([i for i in unit
+                     if (len(v_set - rlt[i])<len(v_set))])
+        if not len(sn_set) == len(v_set):
             return rlt
-        # print(v_in_unit)
-        sn_set = set(v_in_unit)
         return [(v_set & i[0]) if (i[1] in sn_set) else i[0]
                 for i in zip(rlt, range(len(rlt)))]
 
@@ -163,7 +171,8 @@ class sudoku(object):
         """
         if rlt is None:
             rlt = self.rlt
-        set_lst = [set([i+1, j+1, k+1]) for i in range(9) for j in range(9) for k in range(9)
+        set_lst = [set([i+1, j+1, k+1]) for i in range(9)
+                   for j in range(9) for k in range(9)
                    if (i<=j<=k)]
         for v_set in set_lst:
             for unit in self.unit_lst:
@@ -189,27 +198,88 @@ class sudoku(object):
                 rlt = self.tok_acc(v_set, unit_tok, rlt)
         return rlt
 
-    def process(self, rlt=None):
+    def process_acc(self, rlt=None):
         if rlt is None:
             rlt = self.rlt
         for n_1 in range(3):
             n = n_1 + 1
+            # print("try nth:%s"%(n))
             useless_cnt = 0
-            old_sum = sum([i for i in self.is_solved(rlt)])
-            while useless_cnt < 3:
+            old_sum = sum([len(i) for i in rlt])
+            old_solved = sum(self.is_solved(rlt))
+            while useless_cnt < 1:
                 rlt_new = self.tic_tok(rlt=rlt, n=n)
-                new_sum = sum([i for i in self.is_solved(rlt_new)])
+                new_sum = sum([len(i) for i in rlt_new])
+                now_solved = sum(self.is_solved(rlt_new))
                 if new_sum == old_sum:
                     useless_cnt += 1
+                # if old_solved == old_solved:
+                #     useless_cnt += 1
                 rlt = rlt_new
                 old_sum = new_sum
-                if new_sum == 81:
+                old_solved = now_solved
+                solved_sum = self.is_solved(rlt_new)
+                if now_solved == 81:
+                    # print("solved 81 return")
                     return rlt
+        # print("unsolved")
+        return rlt
+
+    def make_choice(self, rlt):
+        cnt = -1
+        st_pick = set([])
+        st_acc = None
+        for st_one in rlt:
+            cnt += 1
+            if (len(st_one) > 1 > len(st_pick)) or (1 < len(st_one) < len(st_pick)):
+                st_pick = st_one
+                st_acc = cnt
+        if len(st_pick) >= 1:
+            choice_lst = []
+            symbol_lst = []
+            for pop_one in st_pick:
+                ss = "GUESS: (%s, %s) -> %s"%(int(st_acc/9)+1, st_acc%9+1, pop_one)
+                symbol_lst.append(ss)
+                choice_lst.append([set([pop_one]) if i[0]==st_acc else i[1]
+                                   for i in zip(range(len(rlt)), rlt)])
+            return [i for i in zip(choice_lst, symbol_lst)]
+        return []
+
+    def process(self, rlt=None):
+        if rlt is None:
+            rlt = self.rlt
+        # print("one move choice level")
+        rlt = self.process_acc(rlt)
+        choice_lst = self.make_choice(rlt)
+        if not len(choice_lst):
+            return rlt
+        rlt_tmp = None
+        # died_cnt = 0
+        for coss in choice_lst:
+            choice_one, ss = coss
+            print(ss)
+            rlt_tmp = self.process(choice_one)
+            if sum(self.is_died(rlt_tmp)) > 0:
+                # print("died guess")
+                # died_cnt += 1
+                continue
+            if sum(self.is_solved(rlt_tmp)) == 9*9:
+                # print("guess solved")
+                return rlt_tmp
+            else:
+                # print("unsolved still")
+                continue
         return rlt
 
 
 def main():
-    pass
+    s = sudoku()
+    load = s.load(test_1)
+    print(s.show())
+    rlt = s.process()
+    print(s.show(rlt))
+    return rlt
+
 
 if __name__ == '__main__':
     main()
