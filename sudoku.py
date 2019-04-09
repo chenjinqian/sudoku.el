@@ -24,6 +24,15 @@ test_2 = [[0,9,0,0,0,0,1,5,0],
           [0,5,3,8,0,0,0,0,0],
           [0,0,0,0,1,4,0,0,0],
           [0,1,2,0,0,0,0,7,0]]
+test_3 = [[0,9,0,0,0,0,1,5,0],
+          [0,0,0,3,7,0,0,0,0],
+          [0,0,0,0,0,5,2,8,0],
+          [0,0,4,1,0,0,0,0,6],
+          [7,0,0,0,4,0,0,0,8],
+          [8,0,0,0,0,2,4,0,0],
+          [0,5,3,8,0,0,0,0,0],
+          [0,0,0,0,1,4,0,0,0],
+          [0,1,2,0,0,0,0,7,0]]
 solve_2 = """
 3 9 6|4 2 8|1 5 7
 2 8 5|3 7 1|6 4 9
@@ -38,15 +47,6 @@ solve_2 = """
 6 1 2|5 3 9|8 7 4
 """
 # solved within four tic_tok process.
-test_3 = [[0,9,0,0,0,0,1,5,0],
-          [0,0,0,3,7,0,0,0,0],
-          [0,0,0,0,0,5,2,8,0],
-          [0,0,4,1,0,0,0,0,6],
-          [7,0,0,0,4,0,0,0,8],
-          [8,0,0,0,0,2,4,0,0],
-          [0,5,3,8,0,0,0,0,0],
-          [0,0,0,0,1,4,0,0,0],
-          [0,1,2,0,0,0,0,7,0]]
 
 
 def groupn(lst, n):
@@ -69,6 +69,16 @@ class sudoku(object):
         self.unit_lst = self.init_unit()
 
     def load(self, simple_lst, setv=True):
+        """
+        represent 9*9 matrix with list of length 81,
+        each element is set of possible values.
+        solved puzzle is like [{1}, {3}, ...],
+        each cell have only one possible value.
+
+        Notice: in this class,
+        sn_? means index(series number) of this list,
+        started with zero
+        """
         assert(len(simple_lst) == 9)
         assert(sum([len(i) for i in simple_lst]) == 81)
         rlt = []
@@ -82,6 +92,9 @@ class sudoku(object):
         return rlt
 
     def show(self, rlt=None):
+        """
+        print rlt in human readable format.
+        """
         if rlt is None:
             rlt = self.rlt
         r_div = "\n-----+-----+-----\n"
@@ -98,33 +111,88 @@ class sudoku(object):
         return s
 
     def is_solved(self, lst=None):
+        """
+        neccery to have only one possible value for each cell.
+        return list of bool of each cell have one value, like
+        [True, False, ...]
+        """
         if lst is None:
             lst = self.rlt
         return [bool(len(i)==1) for i in lst]
 
     def is_unsolved(self, lst=None):
+        """
+        like is_solved, but reverse.
+        """
         if lst is None:
             lst = self.rlt
         return [bool(len(i)>1) for i in lst]
 
     def is_died(self, lst=None):
+        """
+        if puzzle ill designed, or after bad guess, cell possible value is nil,
+        in another words, len(set) < 1
+        return list of bool value.
+        """
         if lst is None:
             lst = self.rlt
         return [bool(len(i)<1) for i in lst]
 
     def init_unit(self):
+        """
+        one unit is formed of 9 cells, each unit have all numbers from 0 ~ 9,
+        this is all rules for sudoku puzzle.
+        in normal case, each puzzle have 27 units: 9 rows, 9 columns, 9 square.
+        some cases 31 units. if so, this function is only place to be changed,
+        not consider here.
+        """
         st_lst = [set() for i in range(9 + 9 + 9)]
         for i in range(9 * 9):
             c = i % 9
             r = int((i - c) / 9)
             x = 3 * int((r - r%3) / 3) + int((c - c%3) / 3)
-            # print(c, r, x)
             st_lst[c].add(i)
             st_lst[r+9].add(i)
             st_lst[x+18].add(i)
         return st_lst
 
     def tok_acc(self, v_set, unit_set, rlt):
+        """
+        1 . .|C . .|. . .
+        . A .|. . .|. . .
+        . . .|. . .|. . .
+        -----+-----+-----
+        B . .|. . .|. . .
+        . . .|. . .|. . .
+        . . .|. . .|. . E
+        -----+-----+-----
+        . . .|. . .|D . .
+        . . .|. . .|. . (2, 3)
+        . . .|. G .|. . (2, 3)
+        consider upper case, it's easy to figure out  (A)
+        could not be 1, because 1 and (A) both in same unit,
+        and in rules, one unit only have one number once.
+        This means (1 not in set(A)), simular to (B) and (C).
+        in mathmatic language,
+
+        set(A) - set([1]) < len(set([1]))
+
+        (B) = (B) - set(1)
+        (C) = (C) - set(1) ...
+        which means OUTSIDE target cell, one possible value is clear up.
+
+        Same thory, even we are not sure about right-down corner,
+        E, D should not be 2 nor 3.
+        math expression is the same.
+
+        complex rules is not neccessery in some easy puzzle.
+
+        NOTICE, if there three cell that get value set of (2, 3) or (2),
+        then we meet dead end, this puzzle have no solve.
+        Because there are no enough values to give every cell(drawer theory).
+        if we find this case, set all three cell to empty set,
+        so that upper level function could findout and handle it.
+        """
         sn_set = set([i for i in range(9*9)
                       if  ((len(v_set - rlt[i])==0)
                            and (len(rlt[i] - v_set)==0))])
@@ -143,7 +211,7 @@ class sudoku(object):
 
     def tok(self, rlt=None):
         """
-        exclude cells Outside targets possible value set.
+        check tok_acc case for all conbinetion one by one.
         """
         if rlt is None:
             rlt = self.rlt
@@ -158,6 +226,34 @@ class sudoku(object):
         return rlt
 
     def tic_acc(self, v_set, unit, rlt):
+        """
+        A . .|1 . .|2 . .
+        . . .|. . .|1 . .
+        . . .|. . .|3 . .
+        -----+-----+-----
+        . . 1|. . .|. . .
+        . . .|. . .|. 3 .
+        . . .|. . .|. 2 .
+        -----+-----+-----
+        . 1 .|. . .|9 . 7
+        . . .|. . .|. . C
+        . . .|. . .|. . B
+        consider upper case,
+        in unit square-1, there is only one cell have possiblity
+        to be 1, then this cell (A) have to be 1.
+        if not, this unit will not have value 1.
+
+        if v_set is (1), unit is left-up squre
+        then (A) = (A) & set(1)
+        Which mean (A) clear up INSIDE possible values.
+
+        expand this rule, v_set is (2, 3), unit is right-down corner squre,
+        only two cells left for two value, perfect match, so
+        (A) = (A) & set(2, 3)
+        (B) = (B) & set(2, 3)
+
+        Notice, cell and value must math same length.
+        """
         sn_set = set([i for i in unit
                      if (len(v_set - rlt[i])<len(v_set))])
         if not len(sn_set) == len(v_set):
@@ -180,6 +276,10 @@ class sudoku(object):
         return rlt
 
     def tic_tok(self, rlt=None, n=3):
+        """
+        if n is 1, only apply simple value set for tic-tok process.
+        some complex puzzle could be stalled.
+        """
         if rlt is None:
             rlt = self.rlt
         assert(n>=1)
@@ -199,11 +299,14 @@ class sudoku(object):
         return rlt
 
     def process_acc(self, rlt=None):
+        """
+        auto handle rule complex parameter n.
+        It seems n >= 4 is of little meaning.
+        """
         if rlt is None:
             rlt = self.rlt
         for n_1 in range(3):
             n = n_1 + 1
-            # print("try nth:%s"%(n))
             useless_cnt = 0
             old_sum = sum([len(i) for i in rlt])
             old_solved = sum(self.is_solved(rlt))
@@ -213,19 +316,20 @@ class sudoku(object):
                 now_solved = sum(self.is_solved(rlt_new))
                 if new_sum == old_sum:
                     useless_cnt += 1
-                # if old_solved == old_solved:
-                #     useless_cnt += 1
                 rlt = rlt_new
                 old_sum = new_sum
                 old_solved = now_solved
                 solved_sum = self.is_solved(rlt_new)
                 if now_solved == 81:
-                    # print("solved 81 return")
                     return rlt
-        # print("unsolved")
         return rlt
 
     def make_choice(self, rlt):
+        """
+        if one puzzle is stalled, chose one cell and
+        guess its value each time,
+        return list of all guess.
+        """
         cnt = -1
         st_pick = set([])
         st_acc = None
@@ -238,7 +342,7 @@ class sudoku(object):
             choice_lst = []
             symbol_lst = []
             for pop_one in st_pick:
-                ss = "GUESS: (%s, %s) -> %s"%(int(st_acc/9)+1, st_acc%9+1, pop_one)
+                ss = "GUESS: (%s, %s) --> %s"%(int(st_acc/9)+1, st_acc%9+1, pop_one)
                 symbol_lst.append(ss)
                 choice_lst.append([set([pop_one]) if i[0]==st_acc else i[1]
                                    for i in zip(range(len(rlt)), rlt)])
@@ -246,28 +350,32 @@ class sudoku(object):
         return []
 
     def process(self, rlt=None):
+        """
+        use process_acc should sove most sudoku puzzle,
+        but there exist supper hard ones, even complex rules is
+        of no help, such as test_1
+        For those puzzles, it need to use deepth prior search
+        to find out one solve.
+        In thory, if there is a function to determine puzzled solved or not,
+        it is enough to find a solve, but that takes long time.
+        to save time, after each guess, use process_acc
+        to reduce search space.
+        Notice:
+        do not return all solve if puzzle have multiple solve.
+        """
         if rlt is None:
             rlt = self.rlt
-        # print("one move choice level")
         rlt = self.process_acc(rlt)
         choice_lst = self.make_choice(rlt)
         if not len(choice_lst):
             return rlt
-        rlt_tmp = None
-        # died_cnt = 0
         for coss in choice_lst:
             choice_one, ss = coss
-            print(ss)
-            rlt_tmp = self.process(choice_one)
-            if sum(self.is_died(rlt_tmp)) > 0:
-                # print("died guess")
-                # died_cnt += 1
-                continue
-            if sum(self.is_solved(rlt_tmp)) == 9*9:
-                # print("guess solved")
-                return rlt_tmp
+            # print(ss)
+            rlt = self.process(choice_one)
+            if sum(self.is_solved(rlt)) == 9*9:
+                return rlt
             else:
-                # print("unsolved still")
                 continue
         return rlt
 
@@ -276,7 +384,9 @@ def main():
     s = sudoku()
     load = s.load(test_1)
     print(s.show())
+    print("start slove...")
     rlt = s.process()
+    print("resule:")
     print(s.show(rlt))
     return rlt
 
