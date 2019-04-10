@@ -392,7 +392,7 @@ def main():
     print(s.show())
     print("start slove...")
     rlt = s.process()
-    print("resule:")
+    print("result:")
     print(s.show(rlt))
     return rlt
 
