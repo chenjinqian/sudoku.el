@@ -63,6 +63,8 @@ class sudoku(object):
         load = s.load(test_2)
         s.rlt = s.tic_tok()
         print(s.show())
+        rlt = s.process()
+        print(s.show(rlt))
         """
         self.rlt = []
         self.task_lst = []
@@ -182,15 +184,14 @@ class sudoku(object):
         which means OUTSIDE target cell, one possible value is clear up.
 
         Same thory, even we are not sure about right-down corner,
-        E, D should not be 2 nor 3.
+        E, D should not be 2 nor 3, G not affacted.
         math expression is the same.
+        complex rules are not neccessery in some easy puzzles.
 
-        complex rules is not neccessery in some easy puzzle.
-
-        NOTICE, if there three cell that get value set of (2, 3) or (2),
+        NOTICE, if there three cell that have value set of (2, 3) or (2),
         then we meet dead end, this puzzle have no solve.
         Because there are no enough values to give every cell(drawer theory).
-        if we find this case, set all three cell to empty set,
+        if we find this case, set all three cell to empty set and return,
         so that upper level function could findout and handle it.
         """
         sn_set = set([i for i in range(9*9)
@@ -243,14 +244,14 @@ class sudoku(object):
         to be 1, then this cell (A) have to be 1.
         if not, this unit will not have value 1.
 
-        if v_set is (1), unit is left-up squre
-        then (A) = (A) & set(1)
+        if v_set is (1), unit is left-up square
+        then (A) = (A) & (1)
         Which mean (A) clear up INSIDE possible values.
 
-        expand this rule, v_set is (2, 3), unit is right-down corner squre,
-        only two cells left for two value, perfect match, so
-        (A) = (A) & set(2, 3)
-        (B) = (B) & set(2, 3)
+        expand this rule, v_set is (2, 3), unit is right-down square,
+        only two cells left for two value (2, 3), perfect match.
+        (A) = (A) & (2, 3)
+        (B) = (B) & (2, 3)
 
         Notice, cell and value must math same length.
         """
@@ -277,8 +278,11 @@ class sudoku(object):
 
     def tic_tok(self, rlt=None, n=3):
         """
+        use tic and tok one time, for every unit set,
+        for every value_set, such as [{1}, {2}, ..., {1,2}, ...],
+        in which max length of value_set is n.
         if n is 1, only apply simple value set for tic-tok process.
-        some complex puzzle could be stalled.
+        Some complex puzzle may get stalled using simple rule.
         """
         if rlt is None:
             rlt = self.rlt
@@ -335,14 +339,18 @@ class sudoku(object):
         st_acc = None
         for st_one in rlt:
             cnt += 1
-            if (len(st_one) > 1 > len(st_pick)) or (1 < len(st_one) < len(st_pick)):
+            if ((len(st_one) > 1 > len(st_pick))
+                or (1 < len(st_one) < len(st_pick))):
                 st_pick = st_one
                 st_acc = cnt
         if len(st_pick) >= 1:
             choice_lst = []
             symbol_lst = []
             for pop_one in st_pick:
-                ss = "GUESS: (%s, %s) --> %s"%(int(st_acc/9)+1, st_acc%9+1, pop_one)
+                ss = "GUESS: (%s, %s) --> %s"%(
+                    int(st_acc/9)+1,
+                    st_acc%9+1,
+                    pop_one)
                 symbol_lst.append(ss)
                 choice_lst.append([set([pop_one]) if i[0]==st_acc else i[1]
                                    for i in zip(range(len(rlt)), rlt)])
@@ -367,8 +375,6 @@ class sudoku(object):
             rlt = self.rlt
         rlt = self.process_acc(rlt)
         choice_lst = self.make_choice(rlt)
-        if not len(choice_lst):
-            return rlt
         for coss in choice_lst:
             choice_one, ss = coss
             # print(ss)
