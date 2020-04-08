@@ -13,3 +13,4 @@ v2 can solve most sudoku problems, v3 try to solve everything, but not yet.
 Author: ChenJinQian
 
 Email: 2012chenjinqian@gmail
+chenjinqian2012@163.com
